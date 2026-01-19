@@ -120,8 +120,8 @@ RUN echo "" && \
     \
     clone_git_repo "${ARGONAUT_REPO_URL}" "${ARGONAUT_VERSION}" /usr/src/argonaut && \
     ln -s /usr/bin/perl /usr/local/bin/perl && \
-    curl -sSL http://cpanmin.us -o /usr/bin/cpanm && \
-    chmod +x /usr/bin/cpanm && \
+    curl -sSL http://cpanmin.us -o /usr/local/bin/cpanm && \
+    chmod +x /usr/local/bin/cpanm && \
     cpanm -n \
                 App::Daemon \
                 Archive::Extract \

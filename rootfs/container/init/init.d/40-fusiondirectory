@@ -11,11 +11,15 @@ prepare_service
 
 fusiondirectory_configure_application
 fusiondirectory_configure_orchestrator
+set -x
+ls -l /www/fusiondirectory/html/themes/
+echo "****"
+ls -l /www/fusiondirectory/ihtml/themes
+set +x
 fusiondirectory_configure_themes
 fusiondirectory_configure_plugins
 fusiondirectory_configure_webroot
 fusiondirectory_configure_ldap_client
 fusiondirectory_configure_overrides
-
 
 liftoff

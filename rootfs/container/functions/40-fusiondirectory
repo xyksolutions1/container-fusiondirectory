@@ -219,14 +219,18 @@ EOF
         if [ -d "${plugin_dir}"/admin ]; then cp -aR "${plugin_dir}"/admin/* "${NGINX_WEBROOT%/}"/plugins/management/ ; fi
         if [ -d "${plugin_dir}"/config ]; then cp -aR "${plugin_dir}"/config/* "${NGINX_WEBROOT%/}"/plugins/configuration/backend/ ; fi
         if [ -d "${plugin_dir}"/backend ]; then cp -aR "${plugin_dir}"/backend "${NGINX_WEBROOT%/}"/plugins/configuration/ ; fi
+
         for plugin_subfolder in addons export generic management personal reports workflow; do
             if [ -d "${plugin_dir}"/"${plugin_subfolder}" ]; then
                 cp -aR "${plugin_dir}"/"${plugin_subfolder}" "${NGINX_WEBROOT%/}"/plugins/
             fi
         done
+        set -x
         if [ -d "${plugin_dir}"/html ]; then cp -aR "${plugin_dir}"/html "${NGINX_WEBROOT%/}"/ ; fi
         if [ -d "${plugin_dir}"/ihtml ]; then cp -aR "${plugin_dir}"/ihtml "${NGINX_WEBROOT%/}"/ ; fi
+        set +x
         if [ -d "${plugin_dir}"/include ]; then cp -aR "${plugin_dir}"/include "${NGINX_WEBROOT%/}"/ ; fi
+
         if [ -d "${plugin_dir}"/locale ]; then
             mkdir -p "${NGINX_WEBROOT%/}"/locale/plugins/"${plugin_subdir}"
             cp -aR "${plugin_dir}"/locale "${NGINX_WEBROOT%/}"/locale/plugins/"${plugin_subdir}"/
@@ -266,6 +270,7 @@ fusiondirectory_configure_overrides() {
 }
 
 fusiondirectory_configure_themes() {
+    set -x
     for tvar in $(set -o posix; env | grep '^THEME_.*_PATH=.*$' | awk -F= '{print $1}'); do
         t_name=$(echo "${tvar}" | sed -E 's|^THEME_(.*)_PATH$|\1|' | tr '[:upper:]' '[:lower:]')
         t_path=$(eval echo "\$${tvar}")
@@ -275,23 +280,45 @@ fusiondirectory_configure_themes() {
             t_ihtml_path="${NGINX_WEBROOT%/}/ihtml/themes/${t_name}"
             c_html_path="${t_path}/html"
             c_ihtml_path="${t_path}/ihtml"
+
+            if [ "${t_name}" = "breezy" ]; then
+                if [ ! -d "${c_html_path}" ] && [ -d "${t_html_path}" ]; then
+                    mkdir -p "${c_html_path}"
+                    cp -aR "${t_html_path}/." "${c_html_path}/"
+                fi
+                if [ -d "${t_html_path}" ]; then
+                    rm -rf "${t_html_path}"
+                fi
+                ln -sf "${c_html_path}" "${t_html_path}"
+                if [ ! -d "${c_ihtml_path}" ] && [ -d "${t_ihtml_path}" ]; then
+                    mkdir -p "${c_ihtml_path}"
+                    cp -aR "${t_ihtml_path}/." "${c_ihtml_path}/"
+                fi
+                if [ -d "${t_ihtml_path}" ]; then
+                    rm -rf "${t_ihtml_path}"
+                fi
+                ln -sf "${c_ihtml_path}" "${t_ihtml_path}"
+                continue
+            fi
+
             if [ -d "${t_html_path}" ]; then
                 if dir_empty "${c_html_path}"; then
-                    cp -aR "${t_html_path}" "${t_path%/}/"
+                    cp -aR "${t_html_path}/." "${c_html_path}/"
                 fi
                 rm -rf "${t_html_path}"
             fi
             ln -sf "${c_html_path}" "${t_html_path}"
             if [ -d "${t_ihtml_path}" ]; then
                 mkdir -p "${c_ihtml_path}"
-                if dir_empty "${c_html_path}"; then
-                    cp -aR "${t_ihtml_path}" "${t_path%/}/"
+                if dir_empty "${c_ihtml_path}"; then
+                    cp -aR "${t_ihtml_path}/." "${c_ihtml_path}/"
                 fi
                 rm -rf "${t_ihtml_path}"
             fi
             ln -sf "${c_ihtml_path}" "${t_ihtml_path}"
         fi
     done
+    set +x
 }
 
 fusiondirectory_configure_webroot() {
