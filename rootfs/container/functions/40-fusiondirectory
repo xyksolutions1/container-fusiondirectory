@@ -1,4 +1,4 @@
-# SPDX-FileCopyrightText: © 2025 Nfrastack <code@nfrastack.com>
+# SPDX-FileCopyrightText: © 2026 Nfrastack <code@nfrastack.com>
 #
 # SPDX-License-Identifier: MIT
 
@@ -46,7 +46,7 @@ fusiondirectory_configure_application() {
         fi
 
         if [ "${!LDAP_HOST}" != "" ]; then
-            cat <<EOF | silent tee -a "${FUSIONDIRECTORY_CONFIG_PATH%/}"/"${FUSIONDIRECTORY_CONFIG_FILE}"
+            write_file -a "${FUSIONDIRECTORY_CONFIG_PATH%/}"/"${FUSIONDIRECTORY_CONFIG_FILE}" <<EOF
 
   <location name="${!LDAP_NAME}" ldapTLS="${!LDAP_TLS,,}">
       <referral URI='${LDAP_SCHEME,,}://${!LDAP_HOST}:${!LDAP_PORT}/${!LDAP_BASE_DN}'
@@ -63,7 +63,7 @@ EOF
         sanity_var LDAP01_NAME "Server Name"
 
         LDAP_DEFAULT=${LDAP_DEFAULT:-${LDAP01_NAME}}
-        cat <<EOF | silent tee "${FUSIONDIRECTORY_CONFIG_PATH%/}"/"${FUSIONDIRECTORY_CONFIG_FILE}"
+        cat <<EOF | write_file "${FUSIONDIRECTORY_CONFIG_PATH%/}"/"${FUSIONDIRECTORY_CONFIG_FILE}"<<EOF
 <?xml version="1.0"?>
 <conf>
   <main default="${LDAP_DEFAULT}"
@@ -75,7 +75,7 @@ EOF
   >
 EOF
         floop "$(set -o posix ; set | grep -c '^LDAP[0-9][0-9]*_NAME')" create_profile EMAN_PADL
-        cat <<EOF | silent tee -a "${FUSIONDIRECTORY_CONFIG_PATH%/}"/"${FUSIONDIRECTORY_CONFIG_FILE}"
+        write_file -a "${FUSIONDIRECTORY_CONFIG_PATH%/}"/"${FUSIONDIRECTORY_CONFIG_FILE}"<<EOF
   </main>
 </conf>
 EOF
@@ -89,7 +89,7 @@ EOF
 
 fusiondirectory_configure_ldap_client() {
     ### Set some LDAP and Argonaut Configuration Files regardless if Argonaut Server Started for Cleaning Audit Dir
-    cat <<EOF | silent tee /etc/openldap/ldap.conf
+    write_file /etc/openldap/ldap.conf<<EOF
     # LDAP Settings
 
     BASE ${LDAP01_BASE_DN}
@@ -100,7 +100,7 @@ EOF
     chmod 0600 /etc/openldap/ldap.conf
     ln -s /etc/openldap /etc/ldap
 
-    cat <<EOF | silent tee /etc/argonaut/argonaut.conf
+    write_file /etc/argonaut/argonaut.conf <<EOF
 [server]
 server_ip   = 127.0.0.1
 
@@ -115,7 +115,7 @@ password = ${LDAP01_ADMIN_PASS}
 EOF
 
     if [ "${LDAP_SCHEME,,}" = "ldaps" ]; then
-        echo 'tls      = on' silent tee -a /etc/argonaut/argonaut.conf
+        echo 'tls      = on' | write_file -a /etc/argonaut/argonaut.conf
     fi
 }
 
@@ -140,7 +140,7 @@ fusiondirectory_configure_plugins() {
 
                 if var_true "${ENABLE_AUDIT_CLEANUP}}"; then
                     print_notice "Setting Audit Cleanup Scheduled Task"
-                    echo "${AUDIT_CLEANUP_CRON_EXP}  TZ=${TIMEZONE} /usr/sbin/argonaut-clean-audit >/dev/null 2>&1" | silent tee /container/cron/argonaut-audit-cleanup
+                    echo "${AUDIT_CLEANUP_CRON_EXP}  TZ=${TIMEZONE} /usr/sbin/argonaut-clean-audit >/dev/null 2>&1" | write_file /container/cron/argonaut-audit-cleanup
                 fi
             ;;
             cyrus | dovecot | migration_mailrouting | postfix | sogo | spamassassin )
@@ -152,7 +152,7 @@ fusiondirectory_configure_plugins() {
                 export PLUGIN_SYSTEMS=true
             ;;
             nextcloud )
-                cat <<EOF | silent tee /container/data/fusiondirectory/plugins/nextcloud/personal/nextcloud/main.inc
+                write_file /container/data/fusiondirectory/plugins/nextcloud/personal/nextcloud/main.inc <<EOF
 <?php
     nextcloudAccount::mainInc('nextcloudAccount', \$ui->dn);
 ?>
@@ -168,13 +168,9 @@ EOF
                 export PLUGIN_SYSTEMS=true
             ;;
             rest | webservice )
-                update_template /etc/nginx/sites.available/rest.template \
-                                                                            NGINX_LOG_ACCESS_LOCATION \
-                                                                            NGINX_LOG_ERROR_LOCATION
-                sed -i \
-                            -e "/include \/etc\/nginx\/sites.available\/rest.template;/d" \
-                            -e "/### Includes/a\ \ \ \ \ \ include \/etc\/nginx\/sites.available\/rest.template;" \
-                        /etc/nginx/sites.available/"${FUSIONDIRECTORY_CONFIG_FILE}"
+                render_template /container/data/nginx/fusiondirectory/templates/rest.template "${NGINX_CONFIG_PATH%/}"/sites.enabled/fusiondirectory/location/rest.conf \
+                                                                                                                                                        NGINX_LOG_ACCESS_LOCATION \
+                                                                                                                                                        NGINX_LOG_ERROR_LOCATION
             ;;
             systems )
                 export PLUGIN_ARGONAUT=true
@@ -187,7 +183,7 @@ EOF
 
                 if var_true "${ENABLE_USER_REMINDER}"; then
                     print_notice "Setting User Reminder Scheduled Task"
-                    echo "${USER_REMINDER_CRON_EXP}  TZ=${TIMEZONE} /usr/sbin/argonaut-user-reminder >/dev/null 2>&1" | silent tee /container/cron/argonaut-user-reminder
+                    echo "${USER_REMINDER_CRON_EXP}  TZ=${TIMEZONE} /usr/sbin/argonaut-user-reminder >/dev/null 2>&1" | write_file /container/cron/argonaut-user-reminder
                 fi
             ;;
         esac
@@ -254,13 +250,9 @@ fusiondirectory_configure_orchestrator() {
             :
         fi
 
-        update_template /etc/nginx/sites.available/orchestrator.template \
-                                                                            NGINX_LOG_ACCESS_LOCATION \
-                                                                            NGINX_LOG_ERROR_LOCATION
-        sed -i \
-                    -e "/include \/etc\/nginx\/sites.available\/orchestrator.template;/d" \
-                    -e "/### Includes/a\ \ \ \ \ \ include \/etc\/nginx\/sites.available\/orchestrator.template;" \
-                /etc/nginx/sites.available/"${FUSIONDIRECTORY_CONFIG_FILE}"
+        render_template /container/data/nginx/fusiondirectory/templates/orchestrator.template ${NGINX_CONFIG_PATH%/}/sites.enabled/fusiondirectory/location/orchestrator.conf \
+                                                                                                                                                        NGINX_LOG_ACCESS_LOCATION \
+                                                                                                                                                        NGINX_LOG_ERROR_LOCATION
     fi
 }
 

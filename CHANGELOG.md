@@ -1,7 +1,7 @@
 ## 1.5-3.0.0pre 2025-11-12 <code at nfrastack dot com>
 
    ### Changed
-      - Switch base image to nfrastack/nginx-php-fpm:7.4 (!)
+      - Switch base image to nfrastack/container-nginx-php-fpm:7.4 (!)
       - Argonaut 1.4
       - FusionDirectory 1.5
       - FusionDirectory Tools 1.2

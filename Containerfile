@@ -44,27 +44,30 @@ COPY LICENSE /usr/src/container/LICENSE
 COPY README.md /usr/src/container/README.md
 
 ENV \
-    CONTAINER_ENABLE_SCHEDULING=TRUE \
-    NGINX_SITE_ENABLED=fusiondirectory \
     NGINX_WEBROOT=/www/fusiondirectory \
-    PHP_ENABLE_CREATE_SAMPLE_PHP=FALSE \
-    PHP_MODULE_ENABLE=GD=TRUE \
-    PHP_MODULE_ENABLE_GETTEXT=TRUE \
-    PHP_MODULE_ENABLE_ICONV=TRUE \
-    PHP_MODULE_ENABLE_IMAGICK=TRUE \
-    PHP_MODULE_ENABLE_IMAP=TRUE \
-    PHP_MODULE_ENABLE_JSON=TRUE \
-    PHP_MODULE_ENABLE_LDAP=TRUE \
-    PHP_MODULE_ENABLE_OPENSSL=TRUE \
-    PHP_MODULE_ENABLE_POSIX=TRUE \
-    PHP_MODULE_ENABLE_SESSION=TRUE \
-    PHP_MODULE_ENABLE_SIMPLEXML=TRUE \
-    PHP_MODULE_ENABLE_XML=TRUE \
-    PHP_MODULE_ENABLE_YAML=TRUE \
     IMAGE_NAME="nfrastack/fusiondirectory" \
     IMAGE_REPO_URL="https://github.com/nfrastack/container-fusiondirectory/"
 
 RUN echo "" && \
+    BUILD_ENV=" \
+                10-nginx/NGINX_SITE_ENABLED=fusiondirectory \
+                10-nginx/NGINX_INDEX_FILE=index.php \
+                20-php-fpm/PHP_ENABLE_CREATE_SAMPLE_PHP=FALSE \
+                20-php-fpm/PHP_MODULE_ENABLE=GD=TRUE \
+                20-php-fpm/PHP_MODULE_ENABLE_GETTEXT=TRUE \
+                20-php-fpm/PHP_MODULE_ENABLE_ICONV=TRUE \
+                20-php-fpm/PHP_MODULE_ENABLE_IMAGICK=TRUE \
+                20-php-fpm/PHP_MODULE_ENABLE_IMAP=TRUE \
+                20-php-fpm/PHP_MODULE_ENABLE_JSON=TRUE \
+                20-php-fpm/PHP_MODULE_ENABLE_LDAP=TRUE \
+                20-php-fpm/PHP_MODULE_ENABLE_OPENSSL=TRUE \
+                20-php-fpm/PHP_MODULE_ENABLE_POSIX=TRUE \
+                20-php-fpm/PHP_MODULE_ENABLE_SESSION=TRUE \
+                20-php-fpm/PHP_MODULE_ENABLE_SIMPLEXML=TRUE \
+                20-php-fpm/PHP_MODULE_ENABLE_XML=TRUE \
+                20-php-fpm/PHP_MODULE_ENABLE_YAML=TRUE \
+              " \
+              && \
     ARGONAUT_BUILD_DEPS_ALPINE=" \
                                     coreutils \
                                     build-base \
