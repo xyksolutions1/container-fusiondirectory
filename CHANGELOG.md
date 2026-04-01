@@ -3,6 +3,12 @@
    ### Added
       - Add Custom theme exporting support - Use THEME_THEMENAME variables to expose a theme within the container
       - Switch base image to nfrastack/container-nginx-php-fpm:7.4 (!)
+      - Argonaut 1.4
+      - FusionDirectory 1.5
+      - FusionDirectory Tools 1.2
+      - FusionDirectory Integrator 1.2
+      - FusionDirectory Plugins 1.5
+      - FusionDirectory Orchestrator 1.1
 
 
 ## 1.4-2.8.4 2023-12-05 <dave at tiredofit dot ca>
