@@ -1,4 +1,4 @@
-# SPDX-FileCopyrightText: © 2025 Nfrastack <code@nfrastack.com>
+# SPDX-FileCopyrightText: © 2026 Nfrastack <code@nfrastack.com>
 #
 # SPDX-License-Identifier: MIT
 
@@ -45,13 +45,14 @@ COPY README.md /usr/src/container/README.md
 
 ENV \
     NGINX_WEBROOT=/www/fusiondirectory \
+    NGINX_SITE_ENABLED=fusiondirectory \
     IMAGE_NAME="nfrastack/fusiondirectory" \
     IMAGE_REPO_URL="https://github.com/nfrastack/container-fusiondirectory/"
 
 RUN echo "" && \
     BUILD_ENV=" \
-                10-nginx/NGINX_SITE_ENABLED=fusiondirectory \
                 10-nginx/NGINX_INDEX_FILE=index.php \
+                10-nginx/NGINX_WEBROOT_SUFFIX=/html \
                 20-php-fpm/PHP_ENABLE_CREATE_SAMPLE_PHP=FALSE \
                 20-php-fpm/PHP_MODULE_ENABLE=GD=TRUE \
                 20-php-fpm/PHP_MODULE_ENABLE_GETTEXT=TRUE \
@@ -164,12 +165,6 @@ RUN echo "" && \
     clone_git_repo https://github.com/tiredofit/fusiondirectory-plugin-kopano main /usr/src/fusiondirectory-plugin-kopano && \
     cp -R "${GIT_REPO_SRC_FUSIONDIRECTORY_PLUGIN_KOPANO%/}"/kopano /container/data/fusiondirectory/plugins/ && \
     container_build_log add "FusionDirectory Kopano Plugin" "main" "https://github.com/tiredofit/fusiondirectory-plugin-kopano" && \
-    clone_git_repo https://github.com/slangdaddy/fusiondirectory-plugin-nextcloud master /usr/src/fusiondirectory-plugin-nextcloud && \
-    rm -rf \
-           "${GIT_REPO_SRC_FUSIONDIRECTORY_PLUGIN_NEXTCLOUD%/}"/.git \
-           "${GIT_REPO_SRC_FUSIONDIRECTORY_PLUGIN_NEXTCLOUD%/}"/src/DEBIAN && \
-    mkdir -p /container/data/fusiondirectory/plugins/nextcloud && \
-    cp -R /usr/src/fusiondirectory-plugin-nextcloud/src/* /container/data/fusiondirectory/plugins/nextcloud/ && \
     container_build_log add "FusionDirectory Nextcloud Plugin Schema" "master" "https://github.com/slangdaddy/fusiondirectory-plugin-nextcloud" && \
     clone_git_repo https://github.com/gallak/fusiondirectory-plugins-seafile master /usr/src/fusiondirectory-plugins-seafile && \
     rm -rf \
@@ -225,6 +220,16 @@ RUN echo "" && \
                     ARGONAUT_BUILD_DEPS \
                     FUSIONDIRECTORY_BUILD_DEPS \
                     && \
+    rm -rf \
+            "${NGINX_WEBROOT}"/AUTHORS.md \
+            "${NGINX_WEBROOT}"/Changelog.md \
+            "${NGINX_WEBROOT}"/UPGRADE.md \
+            "${NGINX_WEBROOT}"/CODE_OF_CONDUCT.md \
+            "${NGINX_WEBROOT}"/README.md \
+            "${NGINX_WEBROOT}"/Changelog \
+            "${NGINX_WEBROOT}"/SECURITY.md \
+            && \
+    \
     package cleanup
 
 COPY rootfs /

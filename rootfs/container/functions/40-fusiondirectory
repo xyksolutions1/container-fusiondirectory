@@ -63,7 +63,7 @@ EOF
         sanity_var LDAP01_NAME "Server Name"
 
         LDAP_DEFAULT=${LDAP_DEFAULT:-${LDAP01_NAME}}
-        cat <<EOF | write_file "${FUSIONDIRECTORY_CONFIG_PATH%/}"/"${FUSIONDIRECTORY_CONFIG_FILE}"<<EOF
+        write_file "${FUSIONDIRECTORY_CONFIG_PATH%/}"/"${FUSIONDIRECTORY_CONFIG_FILE}"<<EOF
 <?xml version="1.0"?>
 <conf>
   <main default="${LDAP_DEFAULT}"
@@ -89,7 +89,7 @@ EOF
 
 fusiondirectory_configure_ldap_client() {
     ### Set some LDAP and Argonaut Configuration Files regardless if Argonaut Server Started for Cleaning Audit Dir
-    write_file /etc/openldap/ldap.conf<<EOF
+    write_file /etc/openldap/ldap.conf <<EOF
     # LDAP Settings
 
     BASE ${LDAP01_BASE_DN}
@@ -151,13 +151,6 @@ fusiondirectory_configure_plugins() {
                 export PLUGIN_ARGONAUT=true
                 export PLUGIN_SYSTEMS=true
             ;;
-            nextcloud )
-                write_file /container/data/fusiondirectory/plugins/nextcloud/personal/nextcloud/main.inc <<EOF
-<?php
-    nextcloudAccount::mainInc('nextcloudAccount', \$ui->dn);
-?>
-EOF
-            ;;
             sympa)
                 export PLUGIN_ALIAS=true
             ;;
@@ -168,9 +161,9 @@ EOF
                 export PLUGIN_SYSTEMS=true
             ;;
             rest | webservice )
-                render_template /container/data/nginx/fusiondirectory/templates/rest.template "${NGINX_CONFIG_PATH%/}"/sites.enabled/fusiondirectory/location/rest.conf \
-                                                                                                                                                        NGINX_LOG_ACCESS_LOCATION \
-                                                                                                                                                        NGINX_LOG_ERROR_LOCATION
+                render_template /container/data/nginx/sites.available/fusiondirectory/templates/rest.template "${NGINX_CONFIG_PATH%/}"/sites.enabled/fusiondirectory/location/rest.conf \
+                                                                                                                                                                        NGINX_LOG_ACCESS_PATH \
+                                                                                                                                                                        NGINX_LOG_ERROR_PATH
             ;;
             systems )
                 export PLUGIN_ARGONAUT=true
@@ -221,10 +214,114 @@ EOF
                 cp -aR "${plugin_dir}"/"${plugin_subfolder}" "${NGINX_WEBROOT%/}"/plugins/
             fi
         done
-        set -x
-        if [ -d "${plugin_dir}"/html ]; then cp -aR "${plugin_dir}"/html "${NGINX_WEBROOT%/}"/ ; fi
-        if [ -d "${plugin_dir}"/ihtml ]; then cp -aR "${plugin_dir}"/ihtml "${NGINX_WEBROOT%/}"/ ; fi
-        set +x
+        # Copy plugin html into webroot per-item, skipping existing files and resolving symlinked webroot targets
+        if [ -d "${plugin_dir}"/html ]; then
+            src_root="${plugin_dir}/html"
+            dest_root="${NGINX_WEBROOT%/}/html"
+            if [ -L "${dest_root}" ]; then
+                real_root=$(readlink -f "${dest_root}") || real_root="${dest_root}"
+            else
+                real_root="${dest_root}"
+            fi
+            mkdir -p "${real_root}"
+            copied=0
+            skipped=0
+            errors=0
+            for item in "${src_root}"/*; do
+                [ -e "${item}" ] || continue
+                name=$(basename "${item}")
+                target="${real_root}/${name}"
+                if [ -d "${item}" ]; then
+                    if [ -d "${target}" ]; then
+                        # merge: copy only missing files into existing directory
+                        if cp -aRn "${item}/." "${target}/"; then
+                            copied=$((copied+1))
+                        else
+                            errors=$((errors+1))
+                            print_warn "Failed merging plugin html dir ${name} into ${target}"
+                        fi
+                    else
+                        if cp -aR "${item}" "${real_root}/"; then
+                            copied=$((copied+1))
+                        else
+                            errors=$((errors+1))
+                            print_warn "Failed copying plugin html dir ${name} into ${real_root}"
+                        fi
+                    fi
+                else
+                    if [ -e "${target}" ]; then
+                        skipped=$((skipped+1))
+                        continue
+                    fi
+                    if cp -aR "${item}" "${real_root}/"; then
+                        copied=$((copied+1))
+                    else
+                        errors=$((errors+1))
+                        print_warn "Failed copying plugin html item ${name} into ${target}"
+                    fi
+                fi
+            done
+            # Summary notices: only report skips or errors to avoid per-file noise
+            if [ "${skipped}" -gt 0 ]; then
+                print_notice "Plugin ${plugin}: skipped ${skipped} existing html items in ${real_root}"
+            fi
+            if [ "${errors}" -gt 0 ]; then
+                print_warn "Plugin ${plugin}: ${errors} errors occurred copying html items into ${real_root}"
+            fi
+        fi
+        if [ -d "${plugin_dir}"/ihtml ]; then
+            src_root="${plugin_dir}/ihtml"
+            dest_root="${NGINX_WEBROOT%/}/ihtml"
+            if [ -L "${dest_root}" ]; then
+                real_root=$(readlink -f "${dest_root}") || real_root="${dest_root}"
+            else
+                real_root="${dest_root}"
+            fi
+            mkdir -p "${real_root}"
+            copied=0
+            skipped=0
+            errors=0
+            for item in "${src_root}"/*; do
+                [ -e "${item}" ] || continue
+                name=$(basename "${item}")
+                target="${real_root}/${name}"
+                if [ -d "${item}" ]; then
+                    if [ -d "${target}" ]; then
+                        if cp -aRn "${item}/." "${target}/"; then
+                            copied=$((copied+1))
+                        else
+                            errors=$((errors+1))
+                            print_warn "Failed merging plugin ihtml dir ${name} into ${target}"
+                        fi
+                    else
+                        if cp -aR "${item}" "${real_root}/"; then
+                            copied=$((copied+1))
+                        else
+                            errors=$((errors+1))
+                            print_warn "Failed copying plugin ihtml dir ${name} into ${real_root}"
+                        fi
+                    fi
+                else
+                    if [ -e "${target}" ]; then
+                        skipped=$((skipped+1))
+                        continue
+                    fi
+                    if cp -aR "${item}" "${real_root}/"; then
+                        copied=$((copied+1))
+                    else
+                        errors=$((errors+1))
+                        print_warn "Failed copying plugin ihtml item ${name} into ${target}"
+                    fi
+                fi
+            done
+            if [ "${skipped}" -gt 0 ]; then
+                print_notice "Plugin ${plugin}: skipped ${skipped} existing ihtml items in ${real_root}"
+            fi
+            if [ "${errors}" -gt 0 ]; then
+                print_warn "Plugin ${plugin}: ${errors} errors occurred copying ihtml items into ${real_root}"
+            fi
+        fi
+
         if [ -d "${plugin_dir}"/include ]; then cp -aR "${plugin_dir}"/include "${NGINX_WEBROOT%/}"/ ; fi
 
         if [ -d "${plugin_dir}"/locale ]; then
@@ -241,6 +338,9 @@ EOF
 }
 
 fusiondirectory_configure_orchestrator() {
+    rm -f /container/data/nginx/sites.available/fusiondirectory/templates/orchestrator.template
+    mv ${NGINX_CONFIG_PATH%/}/sites.enabled/fusiondirectory/location/orchestrator.conf /container/data/nginx/sites.available/fusiondirectory/templates/orchestrator.template
+
     if var_true "${ENABLE_ORCHESTRATOR}"; then
         print_notice "Configuring FusionDirectory Orchestrator"
         create_folder "${ORCHESTRATOR_CONFIG_PATH}" "${NGINX_USER}":"${NGINX_GROUP}" 600
@@ -250,9 +350,9 @@ fusiondirectory_configure_orchestrator() {
             :
         fi
 
-        render_template /container/data/nginx/fusiondirectory/templates/orchestrator.template ${NGINX_CONFIG_PATH%/}/sites.enabled/fusiondirectory/location/orchestrator.conf \
-                                                                                                                                                        NGINX_LOG_ACCESS_LOCATION \
-                                                                                                                                                        NGINX_LOG_ERROR_LOCATION
+        render_template /container/data/nginx/sites.available/fusiondirectory/templates/orchestrator.template ${NGINX_CONFIG_PATH%/}/sites.enabled/fusiondirectory/location/orchestrator.conf \
+                                                                                                                                                        NGINX_LOG_ACCESS_PATH \
+                                                                                                                                                        NGINX_LOG_ERROR_PATH
     fi
 }
 
@@ -262,9 +362,15 @@ fusiondirectory_configure_overrides() {
 }
 
 fusiondirectory_configure_themes() {
-    set -x
-    for tvar in $(set -o posix; env | grep '^THEME_.*_PATH=.*$' | awk -F= '{print $1}'); do
-        t_name=$(echo "${tvar}" | sed -E 's|^THEME_(.*)_PATH$|\1|' | tr '[:upper:]' '[:lower:]')
+    processed_themes=""
+    for tvar in $(set -o posix; env | awk -F= '/^THEME_[A-Za-z0-9_]+=/{print $1}'); do
+        t_name=$(echo "${tvar}" | sed -E 's|^THEME_(.*)$|\1|' | tr '[:upper:]' '[:lower:]')
+        # avoid processing same theme twice
+        case " ${processed_themes} " in
+            *" ${t_name} "*) continue ;;
+        esac
+        processed_themes="${processed_themes} ${t_name}"
+
         t_path=$(eval echo "\$${tvar}")
         if [ -n "${t_name}" ] && [ -n "${t_path}" ]; then
             create_folder "${t_path}" "${NGINX_USER}":"${NGINX_GROUP}" 755
@@ -273,44 +379,29 @@ fusiondirectory_configure_themes() {
             c_html_path="${t_path}/html"
             c_ihtml_path="${t_path}/ihtml"
 
-            if [ "${t_name}" = "breezy" ]; then
-                if [ ! -d "${c_html_path}" ] && [ -d "${t_html_path}" ]; then
-                    mkdir -p "${c_html_path}"
-                    cp -aR "${t_html_path}/." "${c_html_path}/"
-                fi
-                if [ -d "${t_html_path}" ]; then
-                    rm -rf "${t_html_path}"
-                fi
-                ln -sf "${c_html_path}" "${t_html_path}"
-                if [ ! -d "${c_ihtml_path}" ] && [ -d "${t_ihtml_path}" ]; then
-                    mkdir -p "${c_ihtml_path}"
-                    cp -aR "${t_ihtml_path}/." "${c_ihtml_path}/"
-                fi
-                if [ -d "${t_ihtml_path}" ]; then
-                    rm -rf "${t_ihtml_path}"
-                fi
-                ln -sf "${c_ihtml_path}" "${t_ihtml_path}"
-                continue
-            fi
-
             if [ -d "${t_html_path}" ]; then
                 if dir_empty "${c_html_path}"; then
+                    create_folder "$(dirname "${c_html_path}")" "${NGINX_USER}:${NGINX_GROUP}" 755
                     cp -aR "${t_html_path}/." "${c_html_path}/"
                 fi
                 rm -rf "${t_html_path}"
+            else
+                create_folder "$(dirname "${t_html_path}")" "${NGINX_USER}:${NGINX_GROUP}" 755
             fi
-            ln -sf "${c_html_path}" "${t_html_path}"
+            ln -sfn "${c_html_path}" "${t_html_path}"
+
             if [ -d "${t_ihtml_path}" ]; then
-                mkdir -p "${c_ihtml_path}"
                 if dir_empty "${c_ihtml_path}"; then
+                    create_folder "${c_ihtml_path}" "${NGINX_USER}:${NGINX_GROUP}" 755
                     cp -aR "${t_ihtml_path}/." "${c_ihtml_path}/"
                 fi
                 rm -rf "${t_ihtml_path}"
+            else
+                create_folder "$(dirname "${t_ihtml_path}")" "${NGINX_USER}:${NGINX_GROUP}" 755
             fi
-            ln -sf "${c_ihtml_path}" "${t_ihtml_path}"
+            ln -sfn "${c_ihtml_path}" "${t_ihtml_path}"
         fi
     done
-    set +x
 }
 
 fusiondirectory_configure_webroot() {

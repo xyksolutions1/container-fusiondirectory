@@ -1,0 +1,8 @@
+# SPDX-FileCopyrightText: © 2026 Nfrastack <code@nfrastack.com>
+#
+# SPDX-License-Identifier: MIT
+
+location /rest.php {
+    access_log  {{NGINX_LOG_ACCESS_PATH}}/rest-access.log;
+    error_log   {{NGINX_LOG_ERROR_PATH}}/rest-error.log;
+}

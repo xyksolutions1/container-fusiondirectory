@@ -174,11 +174,11 @@ You must have the appropriate schemas installed in your LDAP server before using
 
 | Parameter                | Description                                                    | Default |
 | ------------------------ | -------------------------------------------------------------- | ------- |
-| `THEME_<THEMENAME>_PATH` | Path to THEMENAME |         |
+| `THEME_<THEMENAME>` | Path to THEMENAME |         |
 
 You can keep custom themes outside the FusionDirectory webroot for easier development and upgrades. For each theme, set an environment variable like:
 
-`THEME_MYTHEME_PATH=/path/to/mytheme`
+`THEME_MYTHEME=/path/to/mytheme`
 
 The theme directory should have this structure:
 
@@ -194,7 +194,7 @@ The container will automatically create symbolic links:
 
 This keeps your custom themes separate from core files and makes switching or updating themes simple.
 
->> `THEME_BREEZY_PATH` will copy the existing theme to your chosen path if files do not exist and create a symbolic link for development purposes.
+>> `THEME_BREEZY` will copy the packaged `breezy` theme into your chosen path if the custom path is empty, then create symlinks. If your custom `THEME_BREEZY` path already contains files, the container will remove the packaged `breezy` files and create symlinks to your custom location.
 
 * * *
 

@@ -6,16 +6,12 @@
 source /container/base/functions/container/init
 SERVICE_NAME="fusiondirectory"
 
+prepare_service 10-nginx
 prepare_service
 #check_service_initialized init 30-argonaut
 
 fusiondirectory_configure_application
 fusiondirectory_configure_orchestrator
-set -x
-ls -l /www/fusiondirectory/html/themes/
-echo "****"
-ls -l /www/fusiondirectory/ihtml/themes
-set +x
 fusiondirectory_configure_themes
 fusiondirectory_configure_plugins
 fusiondirectory_configure_webroot
