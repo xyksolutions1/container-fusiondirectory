@@ -18,8 +18,8 @@ LABEL \
         org.opencontainers.image.licenses="MIT"
 
 ARG \
-    ARGONAUT_REPO_URL="https://gitlab.fusiondirectory.org/fusiondirectory/argonaut" \
-    ARGONAUT_VERSION="argonaut-1.4" \
+    ARGONAUT_REPO_URL="https://github.com/fusiondirectory/argonaut" \
+    ARGONAUT_VERSION="1.4-dev" \
     FUSIONDIRECTORY_INTEGRATOR_REPO_URL="https://github.com/fusiondirectory/fusiondirectory-integrator" \
     FUSIONDIRECTORY_INTEGRATOR_VERSION="1.2" \
     FUSIONDIRECTORY_ORCHESTRATOR_REPO_URL="https://github.com/fusiondirectory/fusiondirectory-orchestrator" \
