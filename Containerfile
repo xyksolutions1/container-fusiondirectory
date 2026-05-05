@@ -5,16 +5,16 @@
 ARG \
     BASE_IMAGE
 
-FROM ${BASE_IMAGE}
+FROM docker.io/xyksolutions1/container-nginx-php-fpm:main
 
 LABEL \
         org.opencontainers.image.title="Fusiondirectory" \
         org.opencontainers.image.description="Containerized directory administrator" \
-        org.opencontainers.image.url="https://hub.docker.com/r/nfrastack/fusiondirectory" \
-        org.opencontainers.image.documentation="https://github.com/nfrastack/container-fusiondirectory/blob/main/README.md" \
-        org.opencontainers.image.source="https://github.com/nfrastack/container-fusiondirectory.git" \
-        org.opencontainers.image.authors="Nfrastack <code@nfrastack.com>" \
-        org.opencontainers.image.vendor="Nfrastack <https://www.nfrastack.com>" \
+        org.opencontainers.image.url="https://hub.docker.com/r/xyksolutions1/fusiondirectory" \
+        org.opencontainers.image.documentation="https://github.com/xyksolutions1/container-fusiondirectory/blob/main/README.md" \
+        org.opencontainers.image.source="https://github.com/xyksolutions1/container-fusiondirectory.git" \
+        org.opencontainers.image.authors="xyksolutions1" \
+        org.opencontainers.image.vendor="xyksolutions1" \
         org.opencontainers.image.licenses="MIT"
 
 ARG \
@@ -46,8 +46,8 @@ COPY README.md /usr/src/container/README.md
 ENV \
     NGINX_WEBROOT=/www/fusiondirectory \
     NGINX_SITE_ENABLED=fusiondirectory \
-    IMAGE_NAME="nfrastack/fusiondirectory" \
-    IMAGE_REPO_URL="https://github.com/nfrastack/container-fusiondirectory/"
+    IMAGE_NAME="xyksolutions1/fusiondirectory" \
+    IMAGE_REPO_URL="https://github.com/xyksolutions1/container-fusiondirectory/"
 
 RUN echo "" && \
     BUILD_ENV=" \
